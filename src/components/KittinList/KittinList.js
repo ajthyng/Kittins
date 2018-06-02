@@ -23,15 +23,36 @@ import styled from 'styled-components';
 import {connect} from 'react-redux';
 import {get} from "../../actions/picture";
 
+const colors = [
+  '#011f4b',
+  '#03396c',
+  '#005b96',
+  '#6497b1',
+  '#b3cde0',
+  '#efbbff',
+  '#d896ff',
+  '#be29ec',
+  '#800080',
+  '#660066',
+  '#a3c1ad',
+  '#a0d6b4',
+  '#5f9ea0',
+  '#317873',
+  '#49796b',
+];
+
+let lastColors = [];
+
 const getRandomColor = () => {
-  let colors = [
-    '#1B9196',
-    '#0B797E',
-    '#00484C',
-    '#2B859E',
-    '#024558',
-  ];
-  return colors[Math.floor(Math.random() * 100) % colors.length]
+  if (lastColors.length === colors.length) {
+    lastColors = [];
+  }
+  let index = Math.floor(Math.random() * 100) % colors.length;
+  while(lastColors.indexOf(colors[index]) >= 0) {
+    index = Math.floor(Math.random() * 100) % colors.length;
+  }
+  lastColors.push(colors[index]);
+  return colors[index]
 };
 const KittinFlatList = styled(FlatList)`
   height: 100%;
@@ -41,7 +62,7 @@ const KittinFlatList = styled(FlatList)`
 
 const KittinContainer = styled.View`
   min-width: ${props => props.size}px;
-  max-width: ${props => props.size + 50}px;
+  max-width: ${props => props.size}px;
   height: ${props => props.size}px;
   max-height: ${props => props.size}px;
   flex: 1;
@@ -95,7 +116,7 @@ class KittinList extends Component {
 
   componentDidMount() {
     Dimensions.addEventListener('change', this.handleWindowChange);
-    this.props.getKittins(40);
+    // this.props.getKittins(40);
   }
 
   componentWillUnmount() {
@@ -107,9 +128,13 @@ class KittinList extends Component {
     let {kittinURLs} = props;
     let {data} = state;
     if (kittinURLs.length > 0) {
-      kittinURLs.forEach((url, index) => {
-        data[index].url = url;
-      });
+      data = kittinURLs.reduce((accum, url, index) => {
+        accum.push({
+          url,
+          color: data[index].color
+        });
+        return accum;
+      }, []);
     }
 
     return {

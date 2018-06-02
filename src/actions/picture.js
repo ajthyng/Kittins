@@ -54,9 +54,11 @@ export function get(number = 10) {
         api_key: '00f81d94a94452200fda0e495c11490a',
         nojsoncallback: 1,
         format: 'json',
-        text: 'kittens',
+        text: 'kitten',
+        tags: 'kitten',
         content_type: 1,
-        per_page: number
+        per_page: number,
+        safe_search: 1
       },
     };
     axios.get(options.url, {
