@@ -16,18 +16,19 @@
  * DEALINGS IN THE SOFTWARE.
  */
 import {actions as pictureActions} from '../actions/picture';
-const {REQUEST_PICTURE, PICTURE_SUCCESS, PICTURE_FAILURE} = pictureActions;
+const {REQUEST_PICTURE, PICTURE_SUCCESS, PICTURE_FAILURE, RESET_KITTINS} = pictureActions;
 
 const initialState = {
   isLoading: false,
   urls: [],
-  errorMessage: null
+  errorMessage: null,
+  pageNumber: 1,
 };
 
 const requestPicture = (state, action) => {
   return {
     ...state,
-    isLoading: true,
+    isLoading: action.isLoading,
     errorMessage: null
   }
 };
@@ -37,7 +38,8 @@ const pictureSuccess = (state, action) => {
     ...state,
     isLoading: false,
     urls: [...state.urls, ...action.urls],
-    errorMessage: null
+    errorMessage: null,
+    pageNumber: state.pageNumber + 1,
   }
 };
 
@@ -54,6 +56,7 @@ export function pictureReducer(state = initialState, action) {
     case REQUEST_PICTURE: return requestPicture(state, action);
     case PICTURE_SUCCESS: return pictureSuccess(state, action);
     case PICTURE_FAILURE: return pictureFailure(state, action);
+    case RESET_KITTINS: return initialState;
     default: return state;
   }
 }

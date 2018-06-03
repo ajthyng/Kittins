@@ -20,7 +20,8 @@ import axios from 'axios';
 export const actions = {
   REQUEST_PICTURE: 'REQUEST-PICTURE',
   PICTURE_SUCCESS: 'PICTURE-SUCCESS',
-  PICTURE_FAILURE: 'PICTURE-FAILURE'
+  PICTURE_FAILURE: 'PICTURE-FAILURE',
+  RESET_KITTINS: 'RESET-KITTINS'
 };
 
 const PHOTO_SEARCH_METHOD = 'flickr.photos.search';
@@ -30,8 +31,9 @@ const flickrURL = (photo) => {
   return `https://farm${farm}.staticflickr.com/${server}/${id}_${secret}.jpg`
 };
 
-const requestPicture = () => ({
-  type: actions.REQUEST_PICTURE
+const requestPicture = (silentLoad) => ({
+  type: actions.REQUEST_PICTURE,
+  isLoading: !silentLoad
 });
 
 const pictureSuccess = (urls) => ({
@@ -44,9 +46,15 @@ const pictureFailure = (search) => ({
   search
 });
 
-export function get(number = 10) {
+export function resetKittins() {
+  return {
+    type: actions.RESET_KITTINS
+  };
+}
+
+export function get(number = 10, pageNumber = 1, silentLoad = false) {
   return (dispatch) => {
-    dispatch(requestPicture());
+    dispatch(requestPicture(silentLoad));
     let options = {
       url: 'https://api.flickr.com/services/rest/',
       params: {
@@ -58,6 +66,7 @@ export function get(number = 10) {
         tags: 'kitten',
         content_type: 1,
         per_page: number,
+        page: pageNumber,
         safe_search: 1
       },
     };
@@ -65,7 +74,6 @@ export function get(number = 10) {
       params: options.params
     }).then(res => {
       let photoResults = res.data.photos.photo;
-      console.log(photoResults);
       dispatch(pictureSuccess(photoResults.map(photo => flickrURL(photo))));
     }).catch(err => {
       dispatch(pictureFailure('kittens'));

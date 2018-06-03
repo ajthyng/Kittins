@@ -18,10 +18,13 @@
  * DEALINGS IN THE SOFTWARE.
  */
 import React, {Component} from 'react';
-import {FlatList, Animated, Dimensions, View, StyleSheet} from 'react-native';
+import {FlatList, Animated, TouchableOpacity, Dimensions, Alert, View, StyleSheet} from 'react-native';
+import Ripple from 'react-native-material-ripple';
 import styled from 'styled-components';
 import {connect} from 'react-redux';
-import {get} from "../../actions/picture";
+import {get, resetKittins} from "../../actions/picture";
+
+const Spinner = require('react-native-spinkit');
 
 const colors = [
   '#011f4b',
@@ -48,7 +51,7 @@ const getRandomColor = () => {
     lastColors = [];
   }
   let index = Math.floor(Math.random() * 100) % colors.length;
-  while(lastColors.indexOf(colors[index]) >= 0) {
+  while (lastColors.indexOf(colors[index]) >= 0) {
     index = Math.floor(Math.random() * 100) % colors.length;
   }
   lastColors.push(colors[index]);
@@ -57,7 +60,7 @@ const getRandomColor = () => {
 const KittinFlatList = styled(FlatList)`
   height: 100%;
   width: 100%;
-  background-color: white;
+  background-color: ${getRandomColor()};
 `;
 
 const KittinContainer = styled.View`
@@ -69,29 +72,48 @@ const KittinContainer = styled.View`
   background-color: ${props => props.color};
 `;
 
-const Kittin = styled(Animated.Image)`
-  flex: 1;
-  height: 100%;
+const Kittin = styled.Image`
   width: 100%;
+  height: 100%;
 `;
+
+const KittinLoading = styled(Spinner)`
+  width: 100%;
+  height: 80px;
+  align-content: center;
+  justify-content: center;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  background-color: transparent;
+  opacity: 0.7;
+`;
+
+const KittinTouch = styled(Ripple)`
+  width: 100%;
+  height: 100%;
+  flex: 1;
+`;
+
+const generateKittinPlaceholders = (totalKittins = 100) => {
+  let kittins = [];
+  for (let i = 0; i < totalKittins; i++) {
+    kittins.push({url: null, key: `${i}`, color: getRandomColor()});
+  }
+  return kittins;
+};
 
 class KittinList extends Component {
   constructor(props) {
     super(props);
-    let data= [];
     const {width, height} = Dimensions.get('window');
-    const orientation = width > height ? 'l' : 'p';
     const columns = width > height ? 5 : 3;
-    for (let i = 0; i < 100; i++) {
-      data.push({url: null, color: getRandomColor()});
-    }
 
-    const size = Math.floor(Dimensions.get('window').width / columns);
     this.state = {
-      size,
-      columns,
-      orientation,
-      data,
+      columns: columns,
+      size: Math.floor(width / columns),
+      orientation: width > height ? 'l' : 'p',
+      data: generateKittinPlaceholders(),
+      firstLoad: true,
       opacity: new Animated.Value(0)
     }
   }
@@ -116,7 +138,7 @@ class KittinList extends Component {
 
   componentDidMount() {
     Dimensions.addEventListener('change', this.handleWindowChange);
-    // this.props.getKittins(40);
+    this.props.getKittins(45);
   }
 
   componentWillUnmount() {
@@ -124,32 +146,55 @@ class KittinList extends Component {
   }
 
   static getDerivedStateFromProps(props, state) {
-    console.log(props);
     let {kittinURLs} = props;
     let {data} = state;
+    let firstLoad = true;
     if (kittinURLs.length > 0) {
       data = kittinURLs.reduce((accum, url, index) => {
         accum.push({
+          color: (data[index] || {}).color || getRandomColor(),
           url,
-          color: data[index].color
+          key: index,
         });
         return accum;
       }, []);
+      firstLoad = false;
     }
 
     return {
       ...state,
-      data
+      data,
+      firstLoad
     }
   }
 
-  renderKittin = ({item}) => (
-    <KittinContainer
-      color={item.color}
-      size={this.state.size}>
-      {item.url ? <Kittin style={{opacity: this.state.opacity}} source={{uri: item.url}} /> : null}
-    </KittinContainer>
-  );
+  renderKittin = ({item}) => {
+    let kittin = (
+      <KittinTouch
+        rippleColor={item.color}
+        onPress={() => {
+        this.props.navigation.navigate('Kittin', {url: item.url});
+      }}>
+        <Kittin fadeDuration={100} source={{uri: item.url}}/>
+      </KittinTouch>
+    );
+    return (
+      <KittinContainer
+        color={item.color}
+        size={this.state.size}>
+        {item.url ? kittin : null}
+      </KittinContainer>
+    );
+  };
+
+  getKittins = () => {
+    this.props.resetKittins();
+    this.props.getKittins(40);
+  };
+
+  getMoreKittins = () => {
+    this.props.getMoreKittins(40, this.props.pageNumber);
+  };
 
   render() {
     const {columns, data} = this.state;
@@ -167,9 +212,15 @@ class KittinList extends Component {
       <KittinFlatList
         keyExtractor={(_, i) => `${i}`}
         key={(height > width ? 'v' : 'h')}
+        refreshing={this.props.refreshing && !this.state.firstLoad}
+        onRefresh={this.getKittins}
         numColumns={columns}
         data={data}
+        removeClippedSubviews={false}
         renderItem={this.renderKittin}
+        onEndReached={this.getMoreKittins}
+        onEndThreshold={0.5}
+        ListFooterComponent={() => (<KittinLoading isVisible={true} type={'9CubeGrid'} color="white"/>)}
       />
     );
   }
@@ -177,13 +228,17 @@ class KittinList extends Component {
 
 const mapStateToProps = (state) => {
   return {
-    kittinURLs: state.kittins.urls
+    kittinURLs: state.kittins.urls,
+    refreshing: state.kittins.isLoading,
+    pageNumber: state.kittins.pageNumber,
   }
 };
 
 const mapDispatchToProps = (dispatch) => {
   return {
-    getKittins: (totalKittins) => dispatch(get(totalKittins))
+    getKittins: (totalKittins, page) => dispatch(get(totalKittins, page)),
+    resetKittins: () => dispatch(resetKittins()),
+    getMoreKittins: (totalKittins, page) => dispatch(get(totalKittins, page, true))
   }
 };
 
