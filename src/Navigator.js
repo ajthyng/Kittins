@@ -16,8 +16,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 import KittinList from "./components/KittinList/KittinList";
-import KittinView from './components/KittinView/KittinView';
+import {KittinView} from './components/KittinList/KittinList';
 import {FluidNavigator} from 'react-navigation-fluid-transitions';
+import {StackNavigator} from 'react-navigation';
 
 const KittinNav = FluidNavigator({
   KittinList: {
