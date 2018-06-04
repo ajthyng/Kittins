@@ -94,14 +94,6 @@ def enableSeparateBuildPerCPUArchitecture = false
 def enableProguardInReleaseBuilds = false
 
 android {
-    signingConfigs {
-        release {
-            keyAlias 'android'
-            keyPassword '9x{JA3b/2+QboK5'
-            storeFile file('C:/Users/andre/.keystore/android.jks')
-            storePassword '03dabe4aac'
-        }
-    }
     compileSdkVersion 23
     buildToolsVersion "23.0.1"
 
@@ -114,7 +106,6 @@ android {
         ndk {
             abiFilters "armeabi-v7a", "x86"
         }
-        signingConfig signingConfigs.release
     }
     splits {
         abi {
