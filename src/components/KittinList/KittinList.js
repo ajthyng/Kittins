@@ -22,7 +22,6 @@ import {
   FlatList,
   Animated,
   ActivityIndicator,
-  TouchableHighlight,
   Dimensions,
   Alert,
   View,
@@ -34,7 +33,7 @@ import {connect} from 'react-redux';
 import {get, resetKittins} from "../../actions/picture";
 import {Transition} from "react-navigation-fluid-transitions";
 
-const TouchElement = TouchableHighlight;
+const TouchElement = Ripple;
 
 const colors = [
   '#011f4b',
@@ -155,7 +154,8 @@ class KittinList extends Component {
       data = kittinURLs.reduce((accum, url, index) => {
         accum.push({
           color: (data[index] || {}).color || getRandomColor(),
-          url,
+          url: url.small,
+          largeUrl: url.large,
           key: index,
         });
         return accum;
@@ -175,9 +175,9 @@ class KittinList extends Component {
       <KittinTouch
         rippleColor={item.color}
         onPress={() => {
-          this.props.navigation.navigate('Kittin', {url: item.url});
+          this.props.navigation.navigate('Kittin', {url: item.largeUrl, key: item.key});
         }}>
-        <Transition shared={item.url}>
+        <Transition shared={item.key}>
           <KittinImage dimensions={{width: this.state.size, height: this.state.size}} source={{uri: item.url}}/>
         </Transition>
       </KittinTouch>
@@ -193,7 +193,7 @@ class KittinList extends Component {
 
   getKittins = () => {
     this.props.resetKittins();
-    this.props.getKittins(30);
+    this.props.getKittins(15);
   };
 
   getMoreKittins = () => {
@@ -201,7 +201,7 @@ class KittinList extends Component {
   };
 
   render() {
-    const {columns, data} = this.state;
+    const {columns, data, size} = this.state;
     const {height, width} = Dimensions.get('window');
 
     return (
@@ -212,18 +212,21 @@ class KittinList extends Component {
         onRefresh={this.getKittins}
         numColumns={columns}
         data={data}
+        removeClippedSubviews={true}
         renderItem={this.renderKittin}
         onEndReached={this.getMoreKittins}
-        onEndThreshold={0.3}
-        ListFooterComponent={() => (<KittinLoading isVisible={true} size='large' color='white'/>)}
+        onEndThreshold={0.5}
+        ListFooterComponent={() => (<KittinLoading animating={true} size='large' color='white'/>)}
       />
     );
   }
 }
 
-const KittinViewContainer = styled.ScrollView`
+const KittinViewContainer = styled.View`
   flex: 1;
-  background-color: #000
+  align-items: center;
+  justify-content: center;
+  background-color: #000;
 `;
 
 const KittinImage = styled.Image`
@@ -261,10 +264,11 @@ export class KittinView extends Component {
 
   render() {
     const uri = this.props.navigation.getParam('url', '');
+    const key = this.props.navigation.getParam('key', '');
     return (
       <KittinViewContainer contentContainerStyle={{alignItems: 'center', justifyContent: 'center'}}>
-        <Transition shared={uri}>
-          <KittinImage loadingIndicatorSource={PlaceKittin} dimensions={this.state.dimensions} source={{uri}}/>
+        <Transition shared={key}>
+          <KittinImage dimensions={this.state.dimensions} source={{uri}}/>
         </Transition>
       </KittinViewContainer>
     );

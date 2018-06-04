@@ -26,9 +26,14 @@ export const actions = {
 
 const PHOTO_SEARCH_METHOD = 'flickr.photos.search';
 
-const flickrURL = (photo) => {
+const flickrSmallURL = (photo) => {
   let {farm, server, id, secret} = photo;
-  return `https://farm${farm}.staticflickr.com/${server}/${id}_${secret}.jpg`
+  return `https://farm${farm}.staticflickr.com/${server}/${id}_${secret}_q.jpg`
+};
+
+const flickrLargeURL = (photo) => {
+  let {farm, server, id, secret} = photo;
+  return `https://farm${farm}.staticflickr.com/${server}/${id}_${secret}_b.jpg`
 };
 
 const requestPicture = (silentLoad) => ({
@@ -62,19 +67,22 @@ export function get(number = 10, pageNumber = 1, silentLoad = false) {
         api_key: '00f81d94a94452200fda0e495c11490a',
         nojsoncallback: 1,
         format: 'json',
-        text: 'kitten',
-        tags: 'kitten',
+        text: 'kittens',
+        tags: 'kittens',
         content_type: 1,
         per_page: number,
         page: pageNumber,
-        safe_search: 1
+        safe_search: 3
       },
     };
     axios.get(options.url, {
       params: options.params
     }).then(res => {
       let photoResults = res.data.photos.photo;
-      dispatch(pictureSuccess(photoResults.map(photo => flickrURL(photo))));
+      dispatch(pictureSuccess(photoResults.map(photo => ({
+        small: flickrSmallURL(photo),
+        large: flickrLargeURL(photo)
+      }))));
     }).catch(err => {
       dispatch(pictureFailure('kittens'));
     });

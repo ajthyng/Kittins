@@ -34,10 +34,17 @@ const requestPicture = (state, action) => {
 };
 
 const pictureSuccess = (state, action) => {
+  const onlyOnePage = state.pageNumber === 1;
+  let urls = [];
+  if (onlyOnePage) {
+    urls = [...action.urls];
+  } else {
+    urls = [...state.urls, ...action.urls];
+  }
   return {
     ...state,
     isLoading: false,
-    urls: [...state.urls, ...action.urls],
+    urls,
     errorMessage: null,
     pageNumber: state.pageNumber + 1,
   }
